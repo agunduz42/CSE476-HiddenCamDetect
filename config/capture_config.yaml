@@ -1,0 +1,20 @@
+capture:
+  interface: null
+  duration: 30
+  output_dir: "data/raw_pcap"
+  bpf_filter: ""
+  packet_count: 0
+  promiscuous: true
+  snaplen: 65535
+  
+  # Cihaz sınırlandırması
+  max_devices: 5  # Maksimum 5 cihaz takip et
+  
+  statistics:
+    enabled: true
+    interval: 60
+    
+  device_tracking:
+    enabled: true
+    group_by_mac: true
+    include_local: true
