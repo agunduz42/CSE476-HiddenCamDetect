@@ -79,12 +79,12 @@ def guess_device_type(vendor: str):
         return "Android device"
     return vendor
 
-def summarize_by_device(df_in: pd.DataFrame, threat_scores: np.ndarray, vendor_map=None, out_dir=Path("outputs")):
+def summarize_by_device(df_in: pd.DataFrame, vendor_map=None, out_dir=Path("outputs")):
     out_dir.mkdir(parents=True, exist_ok=True)
-    df = df_in.copy()
-    df["threat_score"] = threat_scores
+    if "threat_score" not in df_in.columns:
+        raise SystemExit("threat_score column missing for device summarization")
     rows = []
-    for mac, g in df.groupby("src_mac"):
+    for mac, g in df_in.groupby("src_mac"):
         max_score = float(g["threat_score"].max())
         mean_score = float(g["threat_score"].mean())
         flows = len(g)
@@ -92,11 +92,10 @@ def summarize_by_device(df_in: pd.DataFrame, threat_scores: np.ndarray, vendor_m
         vendor = vendor_map.get(oui, "") if vendor_map else ""
         device_type = guess_device_type(vendor)
         level = threat_level_from_score(max_score)
-        # hash MAC to avoid exposing device identity
         mac_hash = hashlib.sha256(mac.encode()).hexdigest()[:12]
-        # concise summary: HASH | device_type | level | confidence% | flows
         line = f"{mac_hash} | {device_type} | {level} | confidence {int(max_score*100)}% | flows {flows}"
         rows.append({
+            "src_mac": mac,
             "src_mac_hash": mac_hash,
             "vendor": vendor or "Unknown",
             "device_type": device_type,
@@ -104,7 +103,7 @@ def summarize_by_device(df_in: pd.DataFrame, threat_scores: np.ndarray, vendor_m
             "mean_threat_score": mean_score,
             "flows": flows,
             "threat_level": level,
-            "summary": line
+            "summary": line,
         })
     out_csv = out_dir / "device_threats.csv"
     out_txt = out_dir / "device_threats.txt"
@@ -275,8 +274,24 @@ def main():
     if X.empty:
         raise SystemExit("No numeric features found for inference")
     model = joblib.load(args.model)
+
     probs = compute_prob_stream(model, X)
-    summarize_by_device(df, probs, vendor_map=load_vendor_map(args.vendor_map), out_dir=Path(args.outdir))
+    preds = model.predict(X)
+    confidence = np.where(preds == 0, probs, 1.0 - probs)
+
+    df_out = df.copy()
+    df_out["pred_label"] = preds.astype(int)
+    df_out["confidence"] = confidence
+    df_out["threat_score"] = probs
+    df_out["threat_level"] = [threat_level_from_score(s) for s in probs]
+
+    out_dir = Path(args.outdir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    pred_path = out_dir / "predictions_with_confidence.csv"
+    df_out.to_csv(pred_path, index=False)
+    print(f"Wrote predictions: {pred_path}")
+
+    summarize_by_device(df_out, vendor_map=load_vendor_map(args.vendor_map), out_dir=out_dir)
 
 if __name__ == "__main__":
     main()

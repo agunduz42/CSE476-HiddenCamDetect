@@ -75,9 +75,4 @@ staticfiles/
 .pyre/
 debug.log
 
-# Data
-data/
-results/
-
-# Output
-outputs/
+/data
