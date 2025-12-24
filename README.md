@@ -10,6 +10,21 @@ AI-driven network anomaly detection to spot covert IP cameras on the local netwo
 - `tools/` — helpers for converting JSONL/pcap to feature CSVs.
 - `use_model.py` — run inference on processed CSVs or live capture.
 
+## Installation
+
+1. (Optional) Create and activate a virtual environment (`python -m venv .venv && source .venv/bin/activate` on macOS/Linux or `.venv\Scripts\activate` on Windows).
+2. Install Python dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Ensure `tcpdump` or `tshark` is available if you plan to convert pcaps or run live capture with elevated privileges.
+
+### Data layout
+
+- Raw captures: `data/raw_pcap/`
+- Processed feature CSVs: `data/processed/`
+- Outputs from inference/live runs: `outputs/`
+
 ## Quick start
 
 ```bash
@@ -20,14 +35,14 @@ python src/preprocessing/extract_features.py \
 
 # 2) Train SVM (expects labeled no-streaming vs streaming CSVs)
 python src/model/train_svm.py \
-  --no-streaming data/processed/flows_features_no_streaming.csv \
-  --streaming data/processed/flows_features_streaming.csv \
+  --no-streaming data/processed/flow_features_no_streaming.csv \
+  --streaming data/processed/flow_features_streaming.csv \
   --output-dir src/model \
   --model-name svm_pipeline.joblib
 
 # 3) Inference on existing features
 python use_model.py \
-  --input data/processed/flows_features_streaming.csv \
+  --input data/processed/flow_features_streaming.csv \
   --model src/model/svm_pipeline.joblib \
   --outdir outputs
 
@@ -68,3 +83,7 @@ SVM pipeline with standard scaling and grid search over C/γ. See [`model.train_
 
 - Vendor OUI mapping optional (`--vendor-map` CSV: `OUI,Vendor`).
 - Max devices and capture options are configurable in `config/capture_config.yaml`.
+- To double-check the paths above exist before running, you can run:
+  ```bash
+  find . -maxdepth 3 -type f -name "flow_features*.csv"
+  ```
