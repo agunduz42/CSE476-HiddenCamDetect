@@ -17,6 +17,7 @@ except Exception:
 
 import yaml
 import os
+from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
 import time
@@ -25,9 +26,18 @@ import sys
 import hashlib
 import ipaddress
 
+# Resolve project root so relative paths work regardless of cwd
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
 class PacketCapture:
-    def __init__(self, config_path="config/capture_config.yaml"):
+    def __init__(self, config_path=None):
         """Initialize packet capture with config file."""
+        if config_path is None:
+            config_path = PROJECT_ROOT / "config" / "capture_config.yaml"
+        config_path = Path(config_path)
+        if not config_path.exists():
+            raise FileNotFoundError(f"Capture config not found: {config_path}")
         with open(config_path, 'r') as f:
             self.config = yaml.safe_load(f)['capture']
         
@@ -52,7 +62,6 @@ class PacketCapture:
         
     def signal_handler(self, sig, frame):
         """Handle Ctrl+C gracefully."""
-        # previously printed a message; keep silent
         self.stop_capture = True
     
     def packet_callback(self, packet):
@@ -83,9 +92,6 @@ class PacketCapture:
 
         except Exception:
             return
-
-        # DEBUG: kısa çıktı (geçici)
-        print(f"[debug] upload pkt: src_mac={src_mac} dst_ip={dst_ip} len={len(packet)}")
 
         # Passed upload filter -> record packet and update per-device upload stats
         timestamp = datetime.now()

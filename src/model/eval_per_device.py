@@ -7,6 +7,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 
+# Resolve project root so relative paths work regardless of cwd
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
+
 def prepare(df, label_col="no_streaming"):
     # keep only numeric feature columns (exclude label and src_mac)
     if label_col not in df.columns:
@@ -48,4 +52,7 @@ def leave_one_device_out(no_stream_csv, stream_csv, label_col="no_streaming"):
     return results
 
 if __name__ == "__main__":
-    leave_one_device_out("data/processed/flows_features_no_streaming.csv", "data/processed/flows_features_streaming.csv")
+    leave_one_device_out(
+        str(PROJECT_ROOT / "data" / "processed" / "flows_features_no_streaming.csv"),
+        str(PROJECT_ROOT / "data" / "processed" / "flows_features_streaming.csv")
+    )

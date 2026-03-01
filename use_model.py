@@ -11,6 +11,9 @@ import shutil
 from datetime import datetime
 import hashlib
 
+# Resolve project root so relative paths work regardless of cwd
+PROJECT_ROOT = Path(__file__).resolve().parent
+
 def load_data(path: Path):
     if not path.exists():
         raise SystemExit(f"Input file not found: {path}")
@@ -228,10 +231,10 @@ def pcap_to_jsonl(pcap_path: Path, jsonl_path: Path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", "-i", default="data/processed/flows_features_streaming.csv", help="processed features CSV (if not using --live)")
-    parser.add_argument("--model", "-m", default="src/model/svm_pipeline.joblib", help="joblib model path")
+    parser.add_argument("--input", "-i", default=str(PROJECT_ROOT / "data" / "processed" / "flows_features_streaming.csv"), help="processed features CSV (if not using --live)")
+    parser.add_argument("--model", "-m", default=str(PROJECT_ROOT / "src" / "model" / "svm_pipeline.joblib"), help="joblib model path")
     parser.add_argument("--vendor-map", "-v", default=None, help="optional OUI->vendor CSV (OUI,Vendor)")
-    parser.add_argument("--outdir", "-o", default="outputs", help="output directory")
+    parser.add_argument("--outdir", "-o", default=str(PROJECT_ROOT / "outputs"), help="output directory")
     parser.add_argument("--live", action="store_true", help="capture live traffic from interface")
     parser.add_argument("--iface", default="en0", help="network interface for live capture (default en0)")
     parser.add_argument("--duration", type=int, default=30, help="monitoring duration in seconds for live capture")
@@ -261,7 +264,8 @@ def main():
             print("Converting pcap -> jsonl via tshark...")
             pcap_to_jsonl(pcap_path, jsonl_path)
         feats_out = Path(args.outdir) / "features_live.csv"
-        cmd_ext = ["python", "tools/extract_streaming.py", "--input", str(jsonl_path), "--output", str(feats_out), "--label", "0"]
+        extract_script = str(PROJECT_ROOT / "src" / "preprocessing" / "tools" / "extract_streaming.py")
+        cmd_ext = ["python", extract_script, "--input", str(jsonl_path), "--output", str(feats_out), "--label", "0"]
         print("Running extractor:", " ".join(cmd_ext))
         subprocess.check_call(cmd_ext)
         input_csv = feats_out

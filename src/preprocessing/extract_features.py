@@ -28,8 +28,11 @@ import re
 import scapy.all as scapy
 from scapy.utils import PcapReader
 
-RAW_PCAP_DIR = Path("data/raw_pcap")
-OUT_DIR = Path("data/processed")
+# Resolve project root so relative paths work regardless of cwd
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
+RAW_PCAP_DIR = PROJECT_ROOT / "data" / "raw_pcap"
+OUT_DIR = PROJECT_ROOT / "data" / "processed"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 OUT_CSV = OUT_DIR / "flow_features.csv"
 
@@ -280,4 +283,11 @@ def extract_features_from_pcaps(input_dir=RAW_PCAP_DIR, output_csv=OUT_CSV):
 
 
 if __name__ == "__main__":
-    extract_features_from_pcaps()
+    import argparse
+    parser = argparse.ArgumentParser(description="Extract flow-level features from pcap files.")
+    parser.add_argument("--input-dir", "-i", default=str(RAW_PCAP_DIR),
+                        help="Directory containing .pcap/.pcapng files (default: data/raw_pcap)")
+    parser.add_argument("--output-csv", "-o", default=str(OUT_CSV),
+                        help="Output CSV path (default: data/processed/flow_features.csv)")
+    args = parser.parse_args()
+    extract_features_from_pcaps(input_dir=Path(args.input_dir), output_csv=Path(args.output_csv))

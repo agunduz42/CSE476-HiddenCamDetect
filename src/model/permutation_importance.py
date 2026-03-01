@@ -6,6 +6,11 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.inspection import permutation_importance
 
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
+
 def load_xy(no_csv, stream_csv, label_col="no_streaming"):
     df = pd.concat([pd.read_csv(no_csv), pd.read_csv(stream_csv)], ignore_index=True)
     drop_cols = ["flow_id","pcap_file","src_mac","src_ip","dst_ip","top_protocols"]
@@ -14,7 +19,10 @@ def load_xy(no_csv, stream_csv, label_col="no_streaming"):
     return X, y
 
 if __name__ == "__main__":
-    X, y = load_xy("data/processed/flows_features_no_streaming.csv", "data/processed/flows_features_streaming.csv")
+    X, y = load_xy(
+        str(PROJECT_ROOT / "data" / "processed" / "flows_features_no_streaming.csv"),
+        str(PROJECT_ROOT / "data" / "processed" / "flows_features_streaming.csv")
+    )
     Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
     pipe = Pipeline([("scaler", StandardScaler()), ("svc", SVC(class_weight='balanced', probability=False))])
     pipe.fit(Xtr, ytr)

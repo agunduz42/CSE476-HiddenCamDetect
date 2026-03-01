@@ -7,8 +7,8 @@ capture:
   promiscuous: true
   snaplen: 65535
   
-  # Cihaz sınırlandırması
-  max_devices: 5  # Maksimum 5 cihaz takip et
+  # Device limit
+  max_devices: 5  # Track at most 5 devices
   
   statistics:
     enabled: true

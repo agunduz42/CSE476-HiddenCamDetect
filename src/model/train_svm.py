@@ -9,6 +9,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, precision_recall_curve, precision_score, recall_score
 
+# Resolve project root so relative paths work regardless of cwd
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
 def load_data(no_streaming_csv: Path, streaming_csv: Path):
     df1 = pd.read_csv(no_streaming_csv)
     df2 = pd.read_csv(streaming_csv)
@@ -77,10 +80,10 @@ def main(args):
     print("Confusion matrix:")
     print(confusion_matrix(y_test, y_pred))
 
-    # örnek: tahmin eşiği ile precision/recall bakma
-    probs = best.predict_proba(X_test)[:, 1]   # prob for class 1 (uygulamanıza göre invert gerekebilir)
+    # Example: precision/recall at a chosen threshold
+    probs = best.predict_proba(X_test)[:, 1]   # prob for class 1 (adjust based on your label encoding)
     prec, rec, thr = precision_recall_curve(y_test, probs)
-    # seçilecek eşik: örn. precision >= 0.9 olan en yüksek recall
+    # Choose threshold where precision >= 0.9 with highest recall
     idx = (prec >= 0.9).argmax()
     chosen_thresh = thr[idx] if idx < len(thr) else 0.5
     pred_adj = (probs >= chosen_thresh).astype(int)
@@ -95,12 +98,14 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--no-streaming", dest="no_streaming", default="data/processed/flows_features_no_streaming.csv")
-    parser.add_argument("--streaming", dest="streaming", default="data/processed/flows_features_streaming.csv")
+    parser.add_argument("--no-streaming", dest="no_streaming",
+                        default=str(PROJECT_ROOT / "data" / "processed" / "flows_features_no_streaming.csv"))
+    parser.add_argument("--streaming", dest="streaming",
+                        default=str(PROJECT_ROOT / "data" / "processed" / "flows_features_streaming.csv"))
     parser.add_argument("--label", default="no_streaming")
     parser.add_argument("--test-size", type=float, default=0.2)
     parser.add_argument("--val-size", type=float, default=0.1, help="validation set fraction (of total data)")
-    parser.add_argument("--output-dir", default="src/model")
+    parser.add_argument("--output-dir", default=str(PROJECT_ROOT / "src" / "model"))
     parser.add_argument("--model-name", default="svm_pipeline.joblib")
     parser.add_argument("--n-jobs", type=int, default=2)
     args = parser.parse_args()
